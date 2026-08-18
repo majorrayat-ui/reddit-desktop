@@ -1,0 +1,47 @@
+appId: com.reddit.desktop
+productName: Reddit
+directories:
+  output: dist
+  buildResources: src/assets/icons
+
+files:
+  - src/main/main.js
+  - src/preload/preload.js
+  - src/assets/offline.html
+  - src/assets/icons/**/*
+  - package.json
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Network;WebBrowser;Chat;
+  icon: src/assets/icons
+  synopsis: Reddit desktop wrapper for Linux
+  artifactName: Reddit-Desktop-${version}-${arch}.${ext}
+  desktop:
+    Name: Reddit
+    Comment: Reddit desktop wrapper
+    Icon: reddit
+    Type: Application
+    Categories: Network;WebBrowser;Chat;
+
+deb:
+  packageName: reddit-desktop
+  synopsis: Reddit desktop wrapper
+  maintainer: Reddit Desktop Contributors
+  category: web
+  artifactName: reddit-desktop_${version}_${arch}.${ext}
+  depends:
+    - libx11-6
+    - libxss1
+  afterInstall: scripts/after-install.sh
+  afterRemove: scripts/after-remove.sh
+
+snap:
+  publish: null
+
+appImage:
+  artifactName: Reddit-Desktop-${version}-${arch}.${ext}
+
+publish: null

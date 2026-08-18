@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- Background -->
+  <rect width="256" height="256" fill="#1a1a1b" rx="50"/>
+  
+  <!-- Reddit mascot Snoo simplified -->
+  <!-- Head circle -->
+  <circle cx="128" cy="85" r="35" fill="white"/>
+  
+  <!-- Left ear antenna -->
+  <circle cx="105" cy="55" r="8" fill="white"/>
+  <line x1="110" y1="48" x2="110" y2="30" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- Right ear antenna -->
+  <circle cx="151" cy="55" r="8" fill="white"/>
+  <line x1="146" y1="48" x2="146" y2="30" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- Eyes -->
+  <circle cx="115" cy="80" r="4" fill="#1a1a1b"/>
+  <circle cx="141" cy="80" r="4" fill="#1a1a1b"/>
+  
+  <!-- Snout/nose area -->
+  <ellipse cx="128" cy="100" rx="12" ry="8" fill="#1a1a1b"/>
+  
+  <!-- Body -->
+  <ellipse cx="128" cy="155" rx="45" ry="55" fill="white"/>
+  
+  <!-- Left arm -->
+  <ellipse cx="90" cy="145" rx="12" ry="30" fill="white" transform="rotate(-30 90 145)"/>
+  <circle cx="75" cy="135" r="8" fill="white"/>
+  
+  <!-- Right arm -->
+  <ellipse cx="166" cy="145" rx="12" ry="30" fill="white" transform="rotate(30 166 145)"/>
+  <circle cx="181" cy="135" r="8" fill="white"/>
+  
+  <!-- Left leg -->
+  <ellipse cx="105" cy="205" rx="10" ry="28" fill="white"/>
+  <circle cx="105" cy="235" r="9" fill="white"/>
+  
+  <!-- Right leg -->
+  <ellipse cx="151" cy="205" rx="10" ry="28" fill="white"/>
+  <circle cx="151" cy="235" r="9" fill="white"/>
+  
+  <!-- Happy face on body -->
+  <circle cx="120" cy="150" r="3" fill="#1a1a1b"/>
+  <circle cx="136" cy="150" r="3" fill="#1a1a1b"/>
+  <path d="M 120 165 Q 128 170 136 165" stroke="#1a1a1b" stroke-width="2" fill="none" stroke-linecap="round"/>
+</svg>

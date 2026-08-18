@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build output
+dist/
+out/
+*.AppImage
+*.deb
+*.rpm
+
+# Development
+.DS_Store
+.env
+.env.local
+*.log
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Electron
+electron-crash-reports/

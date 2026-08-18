@@ -1,0 +1,51 @@
+{
+  "name": "reddit-desktop",
+  "version": "1.0.0",
+  "description": "Unofficial Electron wrapper around Reddit's official website.",
+  "main": "src/main/main.js",
+  "homepage": "https://github.com/example/reddit-desktop",
+  "author": { "name": "Reddit Desktop contributors", "email": "maintainers@example.com" },
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging",
+    "validate": "node --check src/main/main.js && node --check src/preload/preload.js",
+    "build": "electron-builder --linux",
+    "build:appimage": "electron-builder --linux AppImage",
+    "build:deb": "electron-builder --linux deb",
+    "build:linux": "electron-builder --linux AppImage deb",
+    "package": "npm run build:linux",
+    "package:linux": "npm run build:linux",
+    "clean": "rm -rf dist/ out/",
+    "postinstall": "echo 'Setup complete. Run: npm run dev'"
+  },
+  "devDependencies": {
+    "electron": "43.3.0",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "com.reddit.desktop",
+    "productName": "Reddit",
+    "asar": true,
+    "directories": { "output": "dist" },
+    "files": [
+      "src/main/main.js",
+      "src/preload/preload.js",
+      "src/assets/offline.html",
+      "src/assets/icons/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Network;WebBrowser;",
+      "icon": "src/assets/icons",
+      "synopsis": "Reddit desktop wrapper",
+      "artifactName": "Reddit-Desktop-${version}-${arch}.${ext}"
+    },
+    "deb": {
+      "artifactName": "reddit-desktop_${version}_${arch}.${ext}"
+    }
+  },
+  "engines": { "node": ">=22.12.0" }
+}
