@@ -1,31 +1,67 @@
-# Reddit Desktop - Linux Electron Wrapper
+# 🚀 Reddit Desktop App for Linux Users
 
-A polished, production-quality Electron-based desktop application that provides a dedicated, native-feeling desktop experience for Reddit on Ubuntu Linux and Kali Linux.
+A native Reddit desktop application for Linux. Full Reddit functionality with offline-ready design.
 
-## Project Overview
+---
 
-Reddit Desktop is an **unofficial Electron wrapper** around Reddit's official website. This application is not affiliated with, endorsed by, or developed by Reddit, Inc.
+## 📦 Installation
 
-The wrapper provides:
+**One-line installation (copy and paste):**
 
-- Native Linux desktop application
-- Session persistence (automatic login on reopening)
-- System integration (menu bar, notifications, downloads)
-- Keyboard shortcuts and navigation controls
-- Multiple window support
-- External link handling
-- Professional error handling and recovery
+```bash
+curl -fsSL https://raw.githubusercontent.com/majorrayat-ui/reddit-desktop/main/install.sh | bash
+```
 
-The application loads [https://www.reddit.com](https://www.reddit.com/) inside a secure Electron container, preserving Reddit's full functionality including:
+This will:
+- ✅ Download Reddit Desktop AppImage
+- ✅ Install to your system
+- ✅ Create desktop launcher
+- ✅ Make it available in your applications menu
 
-- Home and Popular feeds
-- Community browsing and subscriptions
-- Posts, comments, and voting
-- User profiles and accounts
-- Search functionality
-- Create posts and comments
-- Direct messages and notifications
-- All Reddit features available on the web
+Works on: **Ubuntu, Debian, Fedora, Arch, Kali Linux, and all Linux distributions**
+
+---
+
+## 🗑️ Uninstallation
+
+**One-line removal (copy and paste):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/majorrayat-ui/reddit-desktop/main/uninstall.sh | bash
+```
+
+This will:
+- ✅ Remove Reddit Desktop from your system
+- ✅ Clean up all configuration files
+- ✅ Remove desktop launcher
+
+---
+
+## ⌨️ Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| <kbd>Ctrl+N</kbd> | New window |
+| <kbd>Ctrl+R</kbd> | Reload |
+| <kbd>Ctrl+Shift+R</kbd> | Hard reload |
+| <kbd>Alt+Left</kbd> | Back |
+| <kbd>Alt+Right</kbd> | Forward |
+| <kbd>Ctrl+Q</kbd> | Quit |
+| <kbd>F11</kbd> | Fullscreen |
+| <kbd>Ctrl+Plus</kbd> | Zoom in |
+| <kbd>Ctrl+Minus</kbd> | Zoom out |
+
+---
+
+## ℹ️ About
+
+Reddit Desktop is an unofficial Electron wrapper for Reddit's official website. Not affiliated with Reddit, Inc.
+
+## ⚖️ License
+
+MIT License - See LICENSE file
+
+---
 
 ## Architecture
 

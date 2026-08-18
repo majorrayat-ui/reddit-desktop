@@ -16,19 +16,18 @@ linux:
     - AppImage
     - deb
   category: Network;WebBrowser;Chat;
-  icon: src/assets/icons
-  synopsis: Reddit desktop wrapper for Linux
+  synopsis: Reddit desktop application for Linux
   artifactName: Reddit-Desktop-${version}-${arch}.${ext}
   desktop:
     Name: Reddit
-    Comment: Reddit desktop wrapper
-    Icon: reddit
+    Comment: Reddit desktop application
+    Icon: reddit-desktop
     Type: Application
     Categories: Network;WebBrowser;Chat;
 
 deb:
   packageName: reddit-desktop
-  synopsis: Reddit desktop wrapper
+  synopsis: Reddit desktop application
   maintainer: Reddit Desktop Contributors
   category: web
   artifactName: reddit-desktop_${version}_${arch}.${ext}
