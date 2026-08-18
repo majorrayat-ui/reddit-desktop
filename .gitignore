@@ -1,0 +1,44 @@
+# Build outputs
+dist/
+build/
+*.AppImage
+*.deb
+*.rpm
+
+# Node dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+.npm
+
+# Development
+.DS_Store
+.env
+.env.local
+.vscode-test/
+out/
+
+# Build caches
+.cache/
+.eslintcache
+
+# Electron
+resources/
+app.asar
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+
+# OS
+Thumbs.db
+.DS_Store
+*.orig
+
+# Testing
+.nyc_output/
+coverage/
