@@ -4,14 +4,46 @@ const { app, BrowserWindow, Menu, session, shell, ipcMain } = require('electron'
 const fs = require('node:fs');
 const path = require('node:path');
 
+// ============================================================================
+// Configuration
+// ============================================================================
+
 const APP_URL = 'https://www.reddit.com/';
 const PARTITION = 'persist:reddit';
-const REDDIT_HOSTS = new Set(['reddit.com', 'www.reddit.com', 'old.reddit.com', 'new.reddit.com']);
-const ALLOWED_EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:']);
-const ALLOWED_PERMISSIONS = new Set(['media', 'notifications', 'clipboard-read', 'clipboard-sanitized-write', 'camera', 'microphone']);
+
+// Reddit domains and auth providers
+const REDDIT_HOSTS = new Set([
+  'reddit.com',
+  'www.reddit.com',
+  'old.reddit.com',
+  'new.reddit.com',
+  'i.reddit.com',
+  'preview.reddit.com',
+  'm.reddit.com',
+]);
+
+const AUTH_HOSTS = new Set([
+  'accounts.google.com',
+  'login.microsoftonline.com',
+  'appleid.apple.com',
+  'auth.reddit.com',
+]);
+
+const ALLOWED_PERMISSIONS = new Set([
+  'media',
+  'notifications',
+  'clipboard-read',
+  'clipboard-sanitized-write',
+  'camera',
+  'microphone',
+]);
 
 let mainWindow;
 let statePath;
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
 
 /**
  * Check if a hostname matches a set of trusted hosts
@@ -26,7 +58,10 @@ function hostMatches(host, hosts) {
 function isTrustedRedditUrl(value) {
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' && hostMatches(url.hostname.toLowerCase(), REDDIT_HOSTS);
+    return url.protocol === 'https:' && (
+      hostMatches(url.hostname.toLowerCase(), REDDIT_HOSTS) ||
+      hostMatches(url.hostname.toLowerCase(), AUTH_HOSTS)
+    );
   } catch {
     return false;
   }
@@ -36,9 +71,13 @@ function isTrustedRedditUrl(value) {
  * Safely open external URLs using the system default browser
  */
 function openExternal(value) {
+  if (value.startsWith('mailto:') || value.startsWith('tel:')) {
+    void shell.openExternal(value);
+    return;
+  }
   try {
     const url = new URL(value);
-    if (ALLOWED_EXTERNAL_PROTOCOLS.has(url.protocol)) {
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
       void shell.openExternal(url.toString());
     }
   } catch {}
@@ -50,7 +89,7 @@ function openExternal(value) {
 function readWindowState() {
   try {
     const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
-    if ([state.width, state.height].every(Number.isInteger)) {
+    if (Number.isInteger(state.width) && Number.isInteger(state.height)) {
       return state;
     }
   } catch {}
@@ -66,10 +105,19 @@ function saveWindowState() {
   fs.writeFileSync(statePath, JSON.stringify(mainWindow.getNormalBounds()));
 }
 
+// ============================================================================
+// Session Configuration
+// ============================================================================
+
 /**
  * Configure session permissions and download handling
+ * THIS IS THE CRITICAL MISSING PIECE!
  */
 function configureSession(appSession) {
+  // Set user agent to hide Electron signature (helps with website detection)
+  appSession.setUserAgent(app.userAgentFallback.replace(/\sElectron\/[^\s]+/, ''));
+
+  // Handle permission requests
   appSession.setPermissionRequestHandler((webContents, permission, callback) => {
     let origin;
     try {
@@ -85,6 +133,7 @@ function configureSession(appSession) {
     );
   });
 
+  // Check permissions for background processes
   appSession.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
     return (
       ALLOWED_PERMISSIONS.has(permission) &&
@@ -98,12 +147,17 @@ function configureSession(appSession) {
   });
 }
 
+// ============================================================================
+// Window Navigation Policies
+// ============================================================================
+
 /**
  * Apply navigation policies to a browser window
  */
 function applyNavigationPolicy(window) {
   const contents = window.webContents;
 
+  // Handle window.open() calls
   contents.setWindowOpenHandler(({ url }) => {
     if (!isTrustedRedditUrl(url)) {
       openExternal(url);
@@ -116,7 +170,7 @@ function applyNavigationPolicy(window) {
         height: 800,
         title: 'Reddit',
         webPreferences: {
-          preload: path.join(__dirname, '../preload/preload.js'),
+          preload: path.join(__dirname, 'preload.js'),
           contextIsolation: true,
           nodeIntegration: false,
           sandbox: true,
@@ -127,8 +181,10 @@ function applyNavigationPolicy(window) {
     };
   });
 
+  // Apply same policy to newly created windows
   contents.on('did-create-window', applyNavigationPolicy);
 
+  // Handle navigation events
   for (const eventName of ['will-navigate', 'will-redirect']) {
     contents.on(eventName, (event, url) => {
       if (!isTrustedRedditUrl(url)) {
@@ -138,10 +194,10 @@ function applyNavigationPolicy(window) {
     });
   }
 
-  // Handle load failures
+  // Handle network/load failures
   contents.on('did-fail-load', (_event, errorCode, _errorDescription, validatedURL, isMainFrame) => {
     if (isMainFrame && errorCode !== -3) {
-      void window.loadFile(path.join(__dirname, '../assets/offline.html'));
+      void window.loadFile(path.join(__dirname, 'offline.html'));
     }
   });
 
@@ -151,7 +207,24 @@ function applyNavigationPolicy(window) {
       void window.loadURL(APP_URL);
     }
   });
+
+  // Track redirects for debugging
+  contents.on('did-redirect-navigation', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.focus();
+    }
+  });
+
+  contents.on('did-navigate', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.focus();
+    }
+  });
 }
+
+// ============================================================================
+// Application Menu
+// ============================================================================
 
 /**
  * Create the application menu
@@ -162,10 +235,20 @@ function createMenu() {
       {
         label: 'File',
         submenu: [
-          { label: 'New Reddit Window', accelerator: 'CmdOrCtrl+N', click: () => createWindow() },
-          { label: 'Open Reddit', accelerator: 'CmdOrCtrl+O', click: () => mainWindow?.loadURL(APP_URL) },
-          { role: 'close', accelerator: 'CmdOrCtrl+W' },
+          {
+            label: 'New Window',
+            accelerator: 'CmdOrCtrl+N',
+            click: () => createWindow(),
+          },
+          {
+            label: 'Reload',
+            accelerator: 'CmdOrCtrl+R',
+            click: () => mainWindow?.webContents.reload(),
+          },
+          { role: 'back', accelerator: 'Alt+Left' },
+          { role: 'forward', accelerator: 'Alt+Right' },
           { type: 'separator' },
+          { role: 'close', accelerator: 'CmdOrCtrl+W' },
           { role: 'quit', accelerator: 'CmdOrCtrl+Q' },
         ],
       },
@@ -186,64 +269,75 @@ function createMenu() {
         submenu: [
           { role: 'reload', accelerator: 'CmdOrCtrl+R' },
           { role: 'forceReload', accelerator: 'CmdOrCtrl+Shift+R' },
+          { role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' },
           { type: 'separator' },
+          { role: 'resetZoom', accelerator: 'CmdOrCtrl+0' },
           { role: 'zoomIn', accelerator: 'CmdOrCtrl+Plus' },
           { role: 'zoomOut', accelerator: 'CmdOrCtrl+Minus' },
-          { role: 'resetZoom', accelerator: 'CmdOrCtrl+0' },
           { type: 'separator' },
           { role: 'togglefullscreen', accelerator: 'F11' },
-          ...(app.isPackaged ? [] : [{ role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' }]),
-        ],
-      },
-      {
-        label: 'Navigate',
-        submenu: [
-          { role: 'back', accelerator: 'Alt+Left' },
-          { role: 'forward', accelerator: 'Alt+Right' },
-          { type: 'separator' },
-          { label: 'Home', accelerator: 'Alt+Home', click: () => mainWindow?.loadURL(APP_URL) },
         ],
       },
       {
         label: 'Help',
         submenu: [
           {
-            label: 'Reddit Website',
-            click: () => openExternal('https://www.reddit.com'),
+            label: 'Visit Reddit Website',
+            click: () => mainWindow?.loadURL(APP_URL),
           },
           {
-            label: 'Reddit Help',
+            label: 'Reddit Help Center',
             click: () => openExternal('https://www.reddit.com/r/help/'),
           },
           { type: 'separator' },
-          { role: 'about' },
+          {
+            label: 'About Reddit Desktop',
+            click: () => {
+              const aboutWindow = new BrowserWindow({
+                width: 400,
+                height: 300,
+                modal: true,
+                parent: mainWindow,
+                show: false,
+                webPreferences: {
+                  nodeIntegration: false,
+                  contextIsolation: true,
+                },
+              });
+              aboutWindow.loadFile(path.join(__dirname, 'offline.html'));
+              aboutWindow.show();
+            },
+          },
         ],
       },
     ])
   );
 }
 
+// ============================================================================
+// Window Management
+// ============================================================================
+
 /**
  * Create the main application window
  */
 async function createWindow() {
-  if (!statePath) {
-    statePath = path.join(app.getPath('userData'), 'window-state.json');
-  }
+  statePath = path.join(app.getPath('userData'), 'window-state.json');
 
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     ...readWindowState(),
     minWidth: 900,
     minHeight: 600,
     title: 'Reddit',
-    icon: path.join(__dirname, '../assets/icons/512.png'),
+    icon: path.join(__dirname, 'icons', '512.png'),
     webPreferences: {
-      preload: path.join(__dirname, '../preload/preload.js'),
+      preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
       webSecurity: true,
       partition: PARTITION,
+      enableRemoteModule: false,
     },
   });
 
@@ -252,37 +346,75 @@ async function createWindow() {
   mainWindow.on('resize', saveWindowState);
   mainWindow.on('move', saveWindowState);
   mainWindow.on('closed', () => {
-    if (global.mainWindow === mainWindow) {
-      global.mainWindow = null;
-    }
+    mainWindow = null;
   });
 
   await mainWindow.loadURL(APP_URL);
-
-  if (global.mainWindow === undefined) {
-    global.mainWindow = mainWindow;
-  }
-
   return mainWindow;
 }
 
-// IPC handlers
+// ============================================================================
+// IPC Handlers
+// ============================================================================
+
 ipcMain.handle('retry-load', () => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     return mainWindow.loadURL(APP_URL);
   }
 });
 
-// Application lifecycle
+ipcMain.handle('get-app-version', () => app.getVersion());
+
+ipcMain.handle('get-platform', () => process.platform);
+
+// ============================================================================
+// Application Lifecycle
+// ============================================================================
+
+// Prevent multiple instances
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+
   app.whenReady().then(async () => {
-    configureSession(session.fromPartition(PARTITION));
+    // Configure session BEFORE creating window (THIS WAS THE CRITICAL BUG!)
+    const appSession = session.fromPartition(PARTITION);
+    configureSession(appSession);
+
     createMenu();
-    mainWindow = await createWindow();
+    await createWindow();
 
     app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+      }
+    });
+  });
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      app.quit();
+    }
+  });
+
+  app.on('before-quit', () => {
+    saveWindowState();
+  });
+
+  // Handle uncaught exceptions
+  process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('error', error.message);
+    }
+  });
+}
       if (!BrowserWindow.getAllWindows().length) {
         mainWindow = createWindow();
       }
