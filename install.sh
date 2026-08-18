@@ -8,6 +8,7 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo -e "${GREEN}🚀 Installing Reddit Desktop...${NC}"
@@ -16,6 +17,9 @@ echo -e "${GREEN}🚀 Installing Reddit Desktop...${NC}"
 INSTALL_DIR="$HOME/.local/bin"
 APPS_DIR="$HOME/.local/share/applications"
 ICONS_DIR="$HOME/.local/share/icons/hicolor/512x512/apps"
+
+# Expand $HOME for use in desktop entry
+FULL_PATH="$INSTALL_DIR/reddit-desktop"
 
 # Create directories
 mkdir -p "$INSTALL_DIR"
@@ -44,37 +48,86 @@ else
 fi
 
 # Make executable
-chmod +x "$APPIMAGE_PATH"
+chmod 755 "$APPIMAGE_PATH"
 echo -e "${GREEN}✓ AppImage downloaded and made executable${NC}"
 
-# Create desktop entry
-echo -e "${YELLOW}🎨 Creating desktop launcher...${NC}"
-cat > "$APPS_DIR/reddit-desktop.desktop" << 'EOF'
+# Download and install icon
+echo -e "${YELLOW}🎨 Setting up application icon...${NC}"
+ICON_URL="https://raw.githubusercontent.com/majorrayat-ui/reddit-desktop/main/csc-main/Reddit/src/assets/icons/reddit.png"
+ICON_PATH="$ICONS_DIR/reddit-desktop.png"
+
+if command -v curl &> /dev/null; then
+    curl -fsSL "$ICON_URL" -o "$ICON_PATH" 2>/dev/null || {
+        echo -e "${YELLOW}⚠️  Could not download icon, continuing without it${NC}"
+    }
+elif command -v wget &> /dev/null; then
+    wget -q "$ICON_URL" -O "$ICON_PATH" 2>/dev/null || {
+        echo -e "${YELLOW}⚠️  Could not download icon, continuing without it${NC}"
+    }
+fi
+
+# Create desktop entry with full paths
+echo -e "${YELLOW}📝 Creating desktop launcher...${NC}"
+cat > "$APPS_DIR/reddit-desktop.desktop" << EOF
 [Desktop Entry]
+Version=1.0
 Type=Application
 Name=Reddit
-Comment=Reddit Desktop - Linux Application
-Exec=~/.local/bin/reddit-desktop %U
+GenericName=Reddit Client
+Comment=Reddit Desktop - Native Reddit Application for Linux
+Exec=$FULL_PATH %U
 Icon=reddit-desktop
 Terminal=false
-Categories=Network;WebBrowser;
+Categories=Network;WebBrowser;Chat;
 StartupNotify=true
+StartupWMClass=Reddit
+X-GNOME-Usable-Disabled=false
 EOF
 
+chmod 644 "$APPS_DIR/reddit-desktop.desktop"
 echo -e "${GREEN}✓ Desktop entry created${NC}"
 
-# Create symbolic link for command line access
-ln -sf "$APPIMAGE_PATH" "$INSTALL_DIR/reddit-desktop-run" 2>/dev/null || true
+# Update desktop database
+echo -e "${YELLOW}🔄 Updating desktop database...${NC}"
+if command -v update-desktop-database &> /dev/null; then
+    update-desktop-database "$APPS_DIR" 2>/dev/null || true
+    echo -e "${GREEN}✓ Desktop database updated${NC}"
+fi
+
+# Update icon cache
+echo -e "${YELLOW}🔄 Updating icon cache...${NC}"
+if command -v update-icon-caches &> /dev/null; then
+    update-icon-caches "$HOME/.local/share/icons/" 2>/dev/null || true
+    echo -e "${GREEN}✓ Icon cache updated${NC}"
+elif command -v gtk-update-icon-cache &> /dev/null; then
+    gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor/" 2>/dev/null || true
+    echo -e "${GREEN}✓ Icon cache updated${NC}"
+fi
+
+# Add to PATH if needed
+if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
+    echo -e "${YELLOW}💡 Adding $INSTALL_DIR to PATH...${NC}"
+    if [ -f "$HOME/.bashrc" ]; then
+        if ! grep -q "export PATH.*\.local/bin" "$HOME/.bashrc"; then
+            echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> "$HOME/.bashrc"
+            echo -e "${GREEN}✓ Added to ~/.bashrc${NC}"
+        fi
+    fi
+fi
 
 # Success message
 echo ""
 echo -e "${GREEN}✅ Installation Complete!${NC}"
 echo ""
-echo -e "Launch Reddit Desktop in any of these ways:"
-echo -e "  1. Search for 'Reddit' in your applications menu"
-echo -e "  2. Run: ${YELLOW}reddit-desktop${NC}"
-echo -e "  3. Run: ${YELLOW}~/.local/bin/reddit-desktop${NC}"
+echo -e "${BLUE}Launch Reddit Desktop in any of these ways:${NC}"
+echo -e "  1. ${YELLOW}Search for 'Reddit' in your applications menu${NC}"
+echo -e "  2. ${YELLOW}Run:${NC} reddit-desktop"
+echo -e "  3. ${YELLOW}Run:${NC} ~/.local/bin/reddit-desktop"
 echo ""
-echo -e "To uninstall, run:"
+echo -e "${BLUE}To uninstall, run:${NC}"
 echo -e "  ${YELLOW}curl -fsSL https://raw.githubusercontent.com/majorrayat-ui/reddit-desktop/main/uninstall.sh | bash${NC}"
+echo ""
+echo -e "${BLUE}If the application doesn't appear in your menu:${NC}"
+echo -e "  1. Log out and log back in, OR"
+echo -e "  2. Run: ${YELLOW}killall -9 plasmashell${NC} (for KDE) or restart your desktop"
 echo ""
